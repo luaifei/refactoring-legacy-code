@@ -39,9 +39,7 @@ public class WalletTransaction {
     }
 
     public boolean execute() throws InvalidTransactionException {
-        if (buyerId == null || (sellerId == null || amount < 0.0)) {
-            throw new InvalidTransactionException("This is an invalid transaction");
-        }
+        checkArguments();
 
         if (isExecuted()) {
             return true;
@@ -59,29 +57,50 @@ public class WalletTransaction {
                 return true;
             }
 
-            long executionInvokedTimestamp = getCurrentTimeMillis();
-
-            if (isExceedThan20Days(executionInvokedTimestamp)) {
-                this.status = STATUS.EXPIRED;
+            if (isExpired()) {
                 return false;
             }
 
-            WalletService walletService = new WalletServiceImpl();
-            String walletTransactionId = walletService.moveMoney(id, buyerId, sellerId, amount);
+            String walletTransactionId = moveMoney();
 
-            if (walletTransactionId != null) {
-                this.walletTransactionId = walletTransactionId;
-                this.status = STATUS.EXECUTED;
-                return true;
-            } else {
-                this.status = STATUS.FAILED;
-                return false;
-            }
+            return checkResult(walletTransactionId);
 
         } finally {
             if (isLocked) {
                 RedisDistributedLock.getSingletonInstance().unlock(id);
             }
+        }
+    }
+
+    private boolean checkResult(String walletTransactionId) {
+        if (walletTransactionId != null) {
+            this.walletTransactionId = walletTransactionId;
+            this.status = STATUS.EXECUTED;
+            return true;
+        } else {
+            this.status = STATUS.FAILED;
+            return false;
+        }
+    }
+
+    private String moveMoney() {
+        WalletService walletService = new WalletServiceImpl();
+        return walletService.moveMoney(id, buyerId, sellerId, amount);
+    }
+
+    private boolean isExpired() {
+        long executionInvokedTimestamp = getCurrentTimeMillis();
+
+        if (isExceedThan20Days(executionInvokedTimestamp)) {
+            this.status = STATUS.EXPIRED;
+            return true;
+        }
+        return false;
+    }
+
+    private void checkArguments() throws InvalidTransactionException {
+        if (buyerId == null || (sellerId == null || amount < 0.0)) {
+            throw new InvalidTransactionException("This is an invalid transaction");
         }
     }
 
