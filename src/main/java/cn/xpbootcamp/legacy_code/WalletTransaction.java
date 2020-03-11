@@ -35,7 +35,7 @@ public class WalletTransaction {
     }
 
     public boolean execute() throws InvalidTransactionException {
-        if (order.isValid()) {
+        if (!order.isValid()) {
             throw new InvalidTransactionException("This is an invalid transaction");
         }
 
@@ -76,7 +76,7 @@ public class WalletTransaction {
     }
 
     private boolean checkResult(String walletTransactionId) {
-        if (walletTransactionId != null) {
+        if (isTransactSuccess(walletTransactionId)) {
             this.walletTransactionId = walletTransactionId;
             this.status = STATUS.EXECUTED;
             return true;
@@ -84,6 +84,10 @@ public class WalletTransaction {
 
         this.status = STATUS.FAILED;
         return false;
+    }
+
+    private boolean isTransactSuccess(String walletTransactionId) {
+        return walletTransactionId != null;
     }
 
     private String moveMoney() {
