@@ -35,7 +35,7 @@ public class WalletTransaction {
         this.productId = productId;
         this.orderId = orderId;
         this.status = STATUS.TO_BE_EXECUTED;
-        this.createdTimestamp = System.currentTimeMillis();
+        this.createdTimestamp = getCurrentTimeMillis();
     }
 
     public boolean execute() throws InvalidTransactionException {
@@ -43,7 +43,7 @@ public class WalletTransaction {
             throw new InvalidTransactionException("This is an invalid transaction");
         }
 
-        if (status == STATUS.EXECUTED) {
+        if (isExecuted()) {
             return true;
         }
 
@@ -55,13 +55,13 @@ public class WalletTransaction {
                 return false;
             }
 
-            if (status == STATUS.EXECUTED) {
+            if (isExecuted()) {
                 return true;
             }
 
-            long executionInvokedTimestamp = System.currentTimeMillis();
+            long executionInvokedTimestamp = getCurrentTimeMillis();
 
-            if (executionInvokedTimestamp - createdTimestamp > 1728000000) {
+            if (isExceedThan20Days(executionInvokedTimestamp)) {
                 this.status = STATUS.EXPIRED;
                 return false;
             }
@@ -83,6 +83,18 @@ public class WalletTransaction {
                 RedisDistributedLock.getSingletonInstance().unlock(id);
             }
         }
+    }
+
+    private boolean isExceedThan20Days(long executionInvokedTimestamp) {
+        return executionInvokedTimestamp - createdTimestamp > 1728000000;
+    }
+
+    private long getCurrentTimeMillis() {
+        return System.currentTimeMillis();
+    }
+
+    private boolean isExecuted() {
+        return status == STATUS.EXECUTED;
     }
 
 }
