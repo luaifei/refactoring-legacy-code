@@ -29,6 +29,7 @@ public class WalletTransaction {
         if (!this.id.startsWith("t_")) {
             this.id = "t_" + preAssignedId;
         }
+
         this.buyerId = buyerId;
         this.sellerId = sellerId;
         this.productId = productId;
@@ -41,24 +42,33 @@ public class WalletTransaction {
         if (buyerId == null || (sellerId == null || amount < 0.0)) {
             throw new InvalidTransactionException("This is an invalid transaction");
         }
-        if (status == STATUS.EXECUTED) return true;
+
+        if (status == STATUS.EXECUTED) {
+            return true;
+        }
+
         boolean isLocked = false;
         try {
             isLocked = RedisDistributedLock.getSingletonInstance().lock(id);
 
-            // 锁定未成功，返回false
             if (!isLocked) {
                 return false;
             }
-            if (status == STATUS.EXECUTED) return true; // double check
+
+            if (status == STATUS.EXECUTED) {
+                return true;
+            }
+
             long executionInvokedTimestamp = System.currentTimeMillis();
-            // 交易超过20天
+
             if (executionInvokedTimestamp - createdTimestamp > 1728000000) {
                 this.status = STATUS.EXPIRED;
                 return false;
             }
+
             WalletService walletService = new WalletServiceImpl();
             String walletTransactionId = walletService.moveMoney(id, buyerId, sellerId, amount);
+
             if (walletTransactionId != null) {
                 this.walletTransactionId = walletTransactionId;
                 this.status = STATUS.EXECUTED;
@@ -67,6 +77,7 @@ public class WalletTransaction {
                 this.status = STATUS.FAILED;
                 return false;
             }
+
         } finally {
             if (isLocked) {
                 RedisDistributedLock.getSingletonInstance().unlock(id);
