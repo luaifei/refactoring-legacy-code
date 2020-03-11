@@ -15,7 +15,7 @@ public class WalletTransaction {
     private Long productId;
     private String orderId;
     private Long createdTimestamp;
-    private Double amount;
+    private double amount;
     private STATUS status;
     private String walletTransactionId;
 
