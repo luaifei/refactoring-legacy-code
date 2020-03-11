@@ -1,5 +1,6 @@
 package cn.xpbootcamp.legacy_code;
 
+import cn.xpbootcamp.legacy_code.entity.Order;
 import cn.xpbootcamp.legacy_code.service.WalletService;
 import cn.xpbootcamp.legacy_code.service.WalletServiceImpl;
 import cn.xpbootcamp.legacy_code.utils.IdGenerator;
@@ -32,12 +33,15 @@ public class WalletTransactionTest {
 
     @Test
     void should_raise_exception_given_invalid_constructor_parameters() {
-        WalletTransaction invalidCase1 = new WalletTransaction("1", null,
-                1L, 1L, "1");
-        WalletTransaction invalidCase2 = new WalletTransaction("1", 1L,
-                null, 1L, "1");
+        WalletTransaction invalidCase1 = new WalletTransaction("1", new Order(null,
+                1L, 1L, "1", 100.0));
+        WalletTransaction invalidCase2 = new WalletTransaction("1", new Order(1L,
+                null, 1L, "1", 100.0));
+        WalletTransaction invalidCase3 = new WalletTransaction("1", new Order(1L,
+                2L, 1L, "1", -100.0));
         assertThrows(InvalidTransactionException.class, invalidCase1::execute);
         assertThrows(InvalidTransactionException.class, invalidCase2::execute);
+        assertThrows(InvalidTransactionException.class, invalidCase3::execute);
     }
 
     @Test
@@ -50,8 +54,8 @@ public class WalletTransactionTest {
             }
         };
 
-        WalletTransaction transaction = new WalletTransaction("fakeId", 2L,
-                1L, 1L, "1");
+        WalletTransaction transaction = new WalletTransaction("fakeId", new Order(2L,
+                1L, 1L, "1", 100.0));
         assertFalse(transaction.execute());
     }
 
@@ -64,8 +68,8 @@ public class WalletTransactionTest {
             }
         };
 
-        WalletTransaction transaction = new WalletTransaction("fakeId", 2L,
-                1L, 1L, "1");
+        WalletTransaction transaction = new WalletTransaction("fakeId", new Order(2L,
+                1L, 1L, "1", 100.0));
 
         new SystemMock();
         assertFalse(transaction.execute());
@@ -79,13 +83,13 @@ public class WalletTransactionTest {
                 lock.lock("t_fakeId");
                 result = true;
 
-                walletService.moveMoney("t_fakeId", 2L, 1L, 0.0);
+                walletService.moveMoney("t_fakeId", 2L, 1L, 100.0);
                 result = "walletTransactionId";
             }
         };
 
-        WalletTransaction transaction = new WalletTransaction("fakeId", 2L,
-                1L, 1L, "1");
+        WalletTransaction transaction = new WalletTransaction("fakeId", new Order(2L,
+                1L, 1L, "1", 100.0));
 
         assertTrue(transaction.execute());
 
@@ -99,13 +103,13 @@ public class WalletTransactionTest {
                 lock.lock("t_fakeId");
                 result = true;
 
-                walletService.moveMoney("t_fakeId", 2L, 1L, 0.0);
+                walletService.moveMoney("t_fakeId", 2L, 1L, 100.0);
                 result = null;
             }
         };
 
-        WalletTransaction transaction = new WalletTransaction("fakeId", 2L,
-                1L, 1L, "1");
+        WalletTransaction transaction = new WalletTransaction("fakeId", new Order(2L,
+                1L, 1L, "1", 100.0));
 
         assertFalse(transaction.execute());
     }
