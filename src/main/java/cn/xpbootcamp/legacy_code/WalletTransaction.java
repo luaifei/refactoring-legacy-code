@@ -19,18 +19,24 @@ public class WalletTransaction {
     private Long createdTimestamp;
 
     public WalletTransaction(String preAssignedId, Order order) {
-        if (preAssignedId != null && !preAssignedId.isEmpty()) {
-            this.id = preAssignedId;
-        } else {
-            this.id = IdGenerator.generateTransactionId();
-        }
-        if (!this.id.startsWith("t_")) {
-            this.id = "t_" + preAssignedId;
-        }
+        this.id = generateId(preAssignedId);
 
         this.order = order;
         this.status = STATUS.TO_BE_EXECUTED;
         this.createdTimestamp = System.currentTimeMillis();
+    }
+
+    private String generateId(String preAssignedId) {
+        String id = preAssignedId;
+        if (id == null || id.isEmpty()) {
+            id = IdGenerator.generateTransactionId();
+        }
+
+        if (!id.startsWith("t_")) {
+            id = "t_" + preAssignedId;
+        }
+
+        return id;
     }
 
     public boolean execute() throws InvalidTransactionException {

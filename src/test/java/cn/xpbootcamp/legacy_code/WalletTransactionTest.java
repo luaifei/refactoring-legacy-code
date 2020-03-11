@@ -19,8 +19,7 @@ public class WalletTransactionTest {
     @Mocked
     IdGenerator generator;
 
-    @Mocked
-    RedisDistributedLock lock;
+    RedisDistributedLock lock = RedisDistributedLock.getSingletonInstance();
 
     @Mocked
     WalletServiceImpl walletService;
@@ -47,7 +46,7 @@ public class WalletTransactionTest {
     @Test
     void should_return_false_given_lock_failed() throws InvalidTransactionException {
         new SystemMock();
-        new Expectations() {
+        new Expectations(lock) {
             {
                 lock.lock("t_fakeId");
                 result = false;
@@ -61,10 +60,11 @@ public class WalletTransactionTest {
 
     @Test
     void should_return_false_if_exceed_20_days() throws InvalidTransactionException {
-        new Expectations() {
+        new Expectations(lock) {
             {
                 lock.lock("t_fakeId");
                 result = true;
+                lock.unlock("t_fakeId");
             }
         };
 
@@ -78,13 +78,15 @@ public class WalletTransactionTest {
     @Test
     void should_return_true_given_transfer_successfully() throws InvalidTransactionException {
         new SystemMock();
-        new Expectations() {
+        new Expectations(lock) {
             {
                 lock.lock("t_fakeId");
                 result = true;
 
                 walletService.moveMoney("t_fakeId", 2L, 1L, 100.0);
                 result = "walletTransactionId";
+
+                lock.unlock("t_fakeId");
             }
         };
 
@@ -98,13 +100,15 @@ public class WalletTransactionTest {
     @Test
     void should_return_false_given_transfer_failed() throws InvalidTransactionException {
         new SystemMock();
-        new Expectations() {
+        new Expectations(lock) {
             {
                 lock.lock("t_fakeId");
                 result = true;
 
                 walletService.moveMoney("t_fakeId", 2L, 1L, 100.0);
                 result = null;
+
+                lock.unlock("t_fakeId");
             }
         };
 
