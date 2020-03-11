@@ -81,17 +81,15 @@ public class WalletTransaction {
     }
 
     private boolean isExpired() {
-        long executionInvokedTimestamp = System.currentTimeMillis();
-
-        if (isExceedThan20Days(executionInvokedTimestamp)) {
+        if (isExceedThan20Days()) {
             this.status = STATUS.EXPIRED;
             return true;
         }
         return false;
     }
 
-    private boolean isExceedThan20Days(long executionInvokedTimestamp) {
-        return executionInvokedTimestamp - createdTimestamp > 1728000000;
+    private boolean isExceedThan20Days() {
+        return System.currentTimeMillis() - createdTimestamp > 1728000000;
     }
 
     private boolean isExecuted() {
