@@ -7,6 +7,9 @@ import cn.xpbootcamp.legacy_code.utils.IdGenerator;
 import cn.xpbootcamp.legacy_code.utils.RedisDistributedLock;
 
 import javax.transaction.InvalidTransactionException;
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class WalletTransaction {
     private String id;
@@ -45,14 +48,7 @@ public class WalletTransaction {
             return true;
         }
 
-        boolean isLocked = false;
-        try {
-            isLocked = RedisDistributedLock.getSingletonInstance().lock(id);
-
-            if (!isLocked) {
-                return false;
-            }
-
+        return executeWithLock(() -> {
             if (isExecuted()) {
                 return true;
             }
@@ -62,8 +58,20 @@ public class WalletTransaction {
             }
 
             String walletTransactionId = moveMoney();
-
             return checkResult(walletTransactionId);
+        });
+    }
+
+    private boolean executeWithLock(BooleanSupplier businessFunc) {
+        boolean isLocked = false;
+        try {
+            isLocked = RedisDistributedLock.getSingletonInstance().lock(id);
+
+            if (!isLocked) {
+                return false;
+            }
+
+            return businessFunc.getAsBoolean();
 
         } finally {
             if (isLocked) {
@@ -77,10 +85,10 @@ public class WalletTransaction {
             this.walletTransactionId = walletTransactionId;
             this.status = STATUS.EXECUTED;
             return true;
-        } else {
-            this.status = STATUS.FAILED;
-            return false;
         }
+
+        this.status = STATUS.FAILED;
+        return false;
     }
 
     private String moveMoney() {
