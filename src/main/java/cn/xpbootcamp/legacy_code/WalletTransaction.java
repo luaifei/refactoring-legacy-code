@@ -31,7 +31,7 @@ public class WalletTransaction {
 
         this.order = order;
         this.status = STATUS.TO_BE_EXECUTED;
-        this.createdTimestamp = getCurrentTimeMillis();
+        this.createdTimestamp = System.currentTimeMillis();
     }
 
     public boolean execute() throws InvalidTransactionException {
@@ -52,7 +52,10 @@ public class WalletTransaction {
                 return false;
             }
 
-            String walletTransactionId = moveMoney();
+            WalletService walletService = new WalletServiceImpl();
+            String walletTransactionId = walletService.moveMoney(id, order.getBuyerId(),
+                    order.getSellerId(), order.getAmount());
+
             return checkResult(walletTransactionId);
         });
     }
@@ -90,13 +93,8 @@ public class WalletTransaction {
         return walletTransactionId != null;
     }
 
-    private String moveMoney() {
-        WalletService walletService = new WalletServiceImpl();
-        return walletService.moveMoney(id, order.getBuyerId(), order.getSellerId(), order.getAmount());
-    }
-
     private boolean isExpired() {
-        long executionInvokedTimestamp = getCurrentTimeMillis();
+        long executionInvokedTimestamp = System.currentTimeMillis();
 
         if (isExceedThan20Days(executionInvokedTimestamp)) {
             this.status = STATUS.EXPIRED;
@@ -107,10 +105,6 @@ public class WalletTransaction {
 
     private boolean isExceedThan20Days(long executionInvokedTimestamp) {
         return executionInvokedTimestamp - createdTimestamp > 1728000000;
-    }
-
-    private long getCurrentTimeMillis() {
-        return System.currentTimeMillis();
     }
 
     private boolean isExecuted() {
